@@ -1,0 +1,124 @@
+swagger: '2.0'
+
+info:
+  version: "0.0.1"
+  title: Scheduler Micro Service API
+  description: A service that enables job submission, status checking and scheduling
+  contact:
+    name: Dmitry A. Grechka
+    email: dmitry@grechka.family
+tags:
+  - name: Customer
+    description: Submiting job for computation
+  - name: Maintainer
+    description: System maintance
+  - name: Worker
+    description: Processing jobs
+schemes:
+  - http
+
+paths:
+  /scheduler/submit:
+    post:
+      tags:
+        - Customer
+      description: Submit a job for computations
+      parameters:
+       - name: customer_id
+         in: query
+         description: String identifier of a customer
+         required: false
+         type: string
+       - name: job
+         in: body
+         required: true
+         description: Actual job content
+         schema:
+          $ref: '#/definitions/Job'
+      produces:
+       - application/xml
+       - application/json
+      responses:
+        200:
+          description: Job has been processed
+          schema:
+            $ref: '#/definitions/Ticket'
+        201:
+          description: Job has been added to the queue
+          schema:
+            $ref: '#/definitions/Ticket'
+        202:
+          description: The job has already been submited earlier
+          schema:
+            $ref: '#/definitions/Ticket'
+        500:
+          description: Submission general failue
+        501:
+          description: Content storage service unavailable
+        502:
+          description: Job registry unavailable
+  /scheduler/jobs/{ticket}:
+    get:
+      tags:
+        - Customer
+      description: Check the status of the job
+      parameters:
+       - name: ticket
+         in: path
+         required: true
+         type: string
+      responses:
+        200:
+          description: Job has been processed
+        202:
+          description: Job is in queue
+        404:
+          description: Ticket does not exist
+        500:
+          description: Job status general failue
+        502:
+          description: Job registry unavailable
+    delete:
+      tags:
+        - Customer
+        - Maintainer
+      description: Delete all info associated with job
+      parameters:
+       - name: ticket
+         in: path
+         required: true
+         type: string
+      responses:
+        204:
+          description: Job has been removed
+        404:
+          description: Ticket does not exist
+        500:
+          description: Job deletion general failue
+        502:
+          description: Job registry unavailable
+  /scheduler/assign:
+    get:
+      tags:
+        - Worker
+      description: Request next job to process
+      responses:
+        200:
+          description: Job ticket has been assigned
+          schema:
+            $ref: '#/definitions/Ticket'
+        204:
+          description: Job queue is empty
+        500:
+          description: Job assignment general failue
+        502:
+          description: Job registry unavailable
+  
+definitions:
+  Job:
+    title: Job content
+    type: string
+    format: binary
+  Ticket:
+    title: An identifier of a job
+    type: string
